@@ -30,14 +30,15 @@ class FoodCard extends StatelessWidget {
           child: Text(
             itemNumber.toString(),
             style: const TextStyle(
-              color: Color.fromARGB(255, 241, 42, 42),
+              color: Color.fromARGB(255, 232, 48, 48),
               fontWeight: FontWeight.bold,
+
               fontSize: 25,
             ),
           ),
         ),
         title: Text(
-          food.name,
+          food. name,
           style: const TextStyle(fontWeight: FontWeight.bold),
         ),
         subtitle: Text(

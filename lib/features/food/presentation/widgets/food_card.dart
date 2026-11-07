@@ -38,7 +38,7 @@ class FoodCard extends StatelessWidget {
           ),
         ),
         title: Text(
-          food. name,
+          food.name,
           style: const TextStyle(fontWeight: FontWeight.bold),
         ),
         subtitle: Text(

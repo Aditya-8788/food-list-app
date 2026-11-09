@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../../core/utils/helpers.dart';
 import '../../domain/entities/food_entity.dart';
+import 'food_image.dart';
 
 class FoodCard extends StatelessWidget {
   final FoodEntity food;
@@ -32,18 +33,21 @@ class FoodCard extends StatelessWidget {
           padding: const EdgeInsets.all(15),
           child: Row(
             children: [
-              CircleAvatar(
-                radius: 26,
-                backgroundColor: primary.withValues(alpha: 0.1),
-                child: Text(
-                  itemNumber.toString(),
-                  style: TextStyle(
-                    color: primary,
-                    fontWeight: FontWeight.w900,
-                    fontSize: 20,
+              if (FoodImage.hasImage(food.imageUrl))
+                FoodImage(url: food.imageUrl, width: 56, height: 56)
+              else
+                CircleAvatar(
+                  radius: 26,
+                  backgroundColor: primary.withValues(alpha: 0.1),
+                  child: Text(
+                    itemNumber.toString(),
+                    style: TextStyle(
+                      color: primary,
+                      fontWeight: FontWeight.w900,
+                      fontSize: 20,
+                    ),
                   ),
                 ),
-              ),
               const SizedBox(width: 13),
               Expanded(
                 child: Column(

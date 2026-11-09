@@ -6,6 +6,7 @@ import '../../../../core/widgets/app_widgets.dart';
 import '../../../orders/presentation/bloc/cart_cubit.dart';
 import '../../../orders/presentation/widgets/cart_widgets.dart';
 import '../../domain/entities/food_entity.dart';
+import '../widgets/food_image.dart';
 import '../widgets/nutrition_info_card.dart';
 
 class FoodDetailsPage extends StatelessWidget {
@@ -40,6 +41,16 @@ class FoodDetailsPage extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            if (FoodImage.hasImage(food.imageUrl)) ...[
+              FoodImage(
+                url: food.imageUrl,
+                width: double.infinity,
+                height: 210,
+                radius: 22,
+                iconSize: 60,
+              ),
+              const SizedBox(height: 16),
+            ],
             GradientHeader(
               label: food.category.isEmpty ? 'Dish' : food.category,
               title: food.name,

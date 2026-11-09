@@ -1,6 +1,7 @@
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../../core/error/exceptions.dart';
 import '../../domain/entities/order_entity.dart';
 import '../../domain/usecases/order_usecases.dart';
 
@@ -54,7 +55,7 @@ class OrderActionCubit extends Cubit<OrderActionState> {
       final id = await placeOrderUseCase(order);
       emit(OrderActionSuccess('Order placed successfully', orderId: id));
     } catch (e) {
-      emit(OrderActionFailure(e.toString()));
+      emit(OrderActionFailure(_message(e)));
     }
   }
 
@@ -64,7 +65,14 @@ class OrderActionCubit extends Cubit<OrderActionState> {
       await updateOrderStatusUseCase(orderId, status);
       emit(OrderActionSuccess('Order marked as $status', orderId: orderId));
     } catch (e) {
-      emit(OrderActionFailure(e.toString()));
+      emit(OrderActionFailure(_message(e)));
     }
   }
+}
+
+/// Readable text for an error thrown while placing/updating an order.
+String _message(Object error) {
+  if (error is ServerException) return error.message;
+  final text = error.toString();
+  return text.startsWith('Exception: ') ? text.substring(11) : text;
 }

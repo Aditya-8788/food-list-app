@@ -1,130 +1,79 @@
-// TODO: Implement role selection page.
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../../core/widgets/app_widgets.dart';
+import '../../../customer/presentation/pages/customer_home_page.dart';
+import '../../../hotel/presentation/pages/hotel_dashboard_page.dart';
 import '../../domain/entities/user_entity.dart';
 import '../bloc/auth_bloc.dart';
 import '../bloc/auth_event.dart';
 import '../bloc/auth_state.dart';
+import '../widgets/auth_scaffold.dart';
 
 class RoleSelectionPage extends StatelessWidget {
   final UserEntity user;
 
-  const RoleSelectionPage({
-    super.key,
-    required this.user,
-  });
+  const RoleSelectionPage({super.key, required this.user});
 
   void saveRole(BuildContext context, String role) {
     context.read<AuthBloc>().add(
-          AuthSaveRoleRequested(
-            uid: user.uid,
-            role: role,
-          ),
-        );
+      AuthSaveRoleRequested(uid: user.uid, role: role),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: BlocConsumer<AuthBloc, AuthState>(
-        listener: (context, state) {
-          if (state is AuthAuthenticated) {
-            Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(
-                builder: (_) => state.user.role == 'customer'
-                    ? const CustomerTempPage()
-                    : const HotelTempPage(),
-              ),
-            );
-          }
-
-          if (state is AuthError) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text(state.message)),
-            );
-          }
-        },
-        builder: (context, state) {
-          return Container(
-            width: double.infinity,
-            height: double.infinity,
-            padding: const EdgeInsets.all(24),
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  Color(0xffFF6B6B),
-                  Color(0xffFF8E53),
-                ],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-            ),
-            child: Center(
-              child: Container(
-                padding: const EdgeInsets.all(24),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(24),
-                ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Text(
-                      'Choose Your Role',
-                      style: TextStyle(
-                        fontSize: 26,
-                        fontWeight: FontWeight.bold,
-                      ),
+    return BlocConsumer<AuthBloc, AuthState>(
+      listener: (context, state) {
+        if (state is AuthAuthenticated) {
+          final authUser = state.user;
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (_) => authUser.role == 'customer'
+                  ? CustomerHomePage(uid: authUser.uid)
+                  : HotelDashboardPage(
+                      ownerId: authUser.uid,
+                      ownerEmail: authUser.email,
+                      ownerName: authUser.name,
                     ),
-                    const SizedBox(height: 24),
-                    ListTile(
-                      leading: const Icon(Icons.person),
-                      title: const Text('Customer'),
-                      subtitle: const Text('Order food'),
-                      onTap: () => saveRole(context, 'customer'),
-                    ),
-                    const Divider(),
-                    ListTile(
-                      leading: const Icon(Icons.restaurant),
-                      title: const Text('Hotel Owner'),
-                      subtitle: const Text('Add food and manage orders'),
-                      onTap: () => saveRole(context, 'hotel'),
-                    ),
-                    if (state is AuthLoading) ...[
-                      const SizedBox(height: 20),
-                      const CircularProgressIndicator(),
-                    ],
-                  ],
-                ),
-              ),
             ),
           );
-        },
-      ),
-    );
-  }
-}
+        }
 
-class CustomerTempPage extends StatelessWidget {
-  const CustomerTempPage({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return const Scaffold(
-      body: Center(child: Text('Customer Home Page')),
-    );
-  }
-}
-
-class HotelTempPage extends StatelessWidget {
-  const HotelTempPage({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return const Scaffold(
-      body: Center(child: Text('Hotel Dashboard Page')),
+        if (state is AuthError) {
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text(state.message)));
+        }
+      },
+      builder: (context, state) {
+        return AuthScaffold(
+          title: 'Choose Your Role',
+          subtitle: 'How will you use the app?',
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ActionTile(
+                icon: Icons.person_outline_rounded,
+                title: 'Customer',
+                subtitle: 'Order food and track deliveries',
+                onTap: () => saveRole(context, 'customer'),
+              ),
+              ActionTile(
+                icon: Icons.storefront_outlined,
+                title: 'Hotel Owner',
+                subtitle: 'Add food and manage orders',
+                onTap: () => saveRole(context, 'hotel'),
+              ),
+              if (state is AuthLoading) ...[
+                const SizedBox(height: 8),
+                const CircularProgressIndicator(),
+              ],
+            ],
+          ),
+        );
+      },
     );
   }
 }

@@ -1,7 +1,7 @@
-// TODO: Implement edit hotel profile page.
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../../core/widgets/app_widgets.dart';
 import '../../domain/entities/hotel_entity.dart';
 import '../bloc/hotel_bloc.dart';
 import '../bloc/hotel_event.dart';
@@ -94,101 +94,95 @@ class _EditHotelProfilePageState extends State<EditHotelProfilePage> {
     return Scaffold(
       appBar: AppBar(
         title: Text(isEdit ? 'Edit Hotel Profile' : 'Create Hotel Profile'),
-        backgroundColor: const Color(0xffFF6B6B),
-        foregroundColor: Colors.white,
+        centerTitle: true,
       ),
       body: BlocConsumer<HotelBloc, HotelState>(
         listener: (context, state) {
           if (state is HotelActionSuccess) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text(state.message)),
-            );
+            ScaffoldMessenger.of(
+              context,
+            ).showSnackBar(SnackBar(content: Text(state.message)));
             Navigator.pop(context);
           }
 
           if (state is HotelError) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text(state.message)),
-            );
+            ScaffoldMessenger.of(
+              context,
+            ).showSnackBar(SnackBar(content: Text(state.message)));
           }
         },
         builder: (context, state) {
-          return Container(
-            width: double.infinity,
-            height: double.infinity,
-            padding: const EdgeInsets.all(20),
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  Color(0xffFF6B6B),
-                  Color(0xffFF8E53),
-                ],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-            ),
-            child: SingleChildScrollView(
-              child: Container(
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(24),
+          return SingleChildScrollView(
+            padding: const EdgeInsets.fromLTRB(18, 18, 18, 30),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const SectionTitle(
+                  title: 'Restaurant Details',
+                  caption: 'Customers will see this on their orders.',
                 ),
-                child: Column(
-                  children: [
-                    _field(hotelNameController, 'Hotel Name'),
-                    _field(ownerNameController, 'Owner Name'),
-                    _field(emailController, 'Email'),
-                    _field(phoneController, 'Phone'),
-                    _field(addressController, 'Address', maxLines: 3),
-                    _field(imageController, 'Hotel Image URL'),
-                    SwitchListTile(
-                      title: const Text('Hotel Open'),
-                      value: isOpen,
-                      onChanged: (value) {
-                        setState(() {
-                          isOpen = value;
-                        });
-                      },
-                    ),
-                    const SizedBox(height: 20),
-                    state is HotelLoading
-                        ? const CircularProgressIndicator()
-                        : ElevatedButton(
-                            onPressed: saveHotel,
-                            style: ElevatedButton.styleFrom(
-                              minimumSize: const Size(double.infinity, 52),
-                              backgroundColor: const Color(0xffFF6B6B),
-                              foregroundColor: Colors.white,
-                            ),
-                            child: Text(
-                              isEdit ? 'Update Profile' : 'Create Profile',
-                            ),
-                          ),
-                  ],
+                SectionCard(
+                  child: Column(
+                    children: [
+                      FormFieldBox(
+                        controller: hotelNameController,
+                        label: 'Hotel Name',
+                        icon: Icons.storefront_outlined,
+                      ),
+                      FormFieldBox(
+                        controller: ownerNameController,
+                        label: 'Owner Name',
+                        icon: Icons.person_outline_rounded,
+                      ),
+                      FormFieldBox(
+                        controller: emailController,
+                        label: 'Email',
+                        icon: Icons.email_outlined,
+                        keyboardType: TextInputType.emailAddress,
+                      ),
+                      FormFieldBox(
+                        controller: phoneController,
+                        label: 'Phone',
+                        icon: Icons.phone_outlined,
+                        keyboardType: TextInputType.phone,
+                      ),
+                      FormFieldBox(
+                        controller: addressController,
+                        label: 'Address',
+                        icon: Icons.location_on_outlined,
+                        maxLines: 3,
+                      ),
+                      FormFieldBox(
+                        controller: imageController,
+                        label: 'Hotel Image URL',
+                        icon: Icons.image_outlined,
+                      ),
+                      SwitchListTile(
+                        contentPadding: EdgeInsets.zero,
+                        title: const Text(
+                          'Hotel Open',
+                          style: TextStyle(fontWeight: FontWeight.w700),
+                        ),
+                        subtitle: const Text('Accept new orders'),
+                        value: isOpen,
+                        onChanged: (value) => setState(() => isOpen = value),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
+                const SizedBox(height: 24),
+                state is HotelLoading
+                    ? const Center(child: CircularProgressIndicator())
+                    : ElevatedButton(
+                        onPressed: saveHotel,
+                        child: Text(
+                          isEdit ? 'Update Profile' : 'Create Profile',
+                        ),
+                      ),
+              ],
             ),
           );
         },
-      ),
-    );
-  }
-
-  Widget _field(
-    TextEditingController controller,
-    String label, {
-    int maxLines = 1,
-  }) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 14),
-      child: TextField(
-        controller: controller,
-        maxLines: maxLines,
-        decoration: InputDecoration(
-          labelText: label,
-          border: const OutlineInputBorder(),
-        ),
       ),
     );
   }

@@ -1,149 +1,168 @@
 import 'package:flutter/material.dart';
 
+import '../../../../core/utils/helpers.dart';
+import '../../../../core/widgets/app_widgets.dart';
+import '../../../orders/presentation/pages/checkout_page.dart';
 import '../../domain/entities/food_entity.dart';
 import '../widgets/nutrition_info_card.dart';
 
 class FoodDetailsPage extends StatelessWidget {
   final FoodEntity food;
 
-  const FoodDetailsPage({
-    super.key,
-    required this.food,
-  });
+  /// When provided, the customer can order this food.
+  final String? customerUid;
+
+  const FoodDetailsPage({super.key, required this.food, this.customerUid});
+
+  String _num(double v) =>
+      v == v.roundToDouble() ? v.toStringAsFixed(0) : v.toStringAsFixed(1);
 
   @override
   Widget build(BuildContext context) {
+    final canOrder = customerUid != null && food.isAvailable;
+
     return Scaffold(
-      appBar: AppBar(
-        title: Text(food.name),
-        backgroundColor: const Color(0xffFF6B6B),
-        foregroundColor: Colors.white,
-      ),
-      body: Container(
-        width: double.infinity,
-        height: double.infinity,
-        padding: const EdgeInsets.all(20),
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            colors: [
-              Color(0xffFF6B6B),
-              Color(0xffFF8E53),
-            ],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-        ),
-        child: SingleChildScrollView(
-          child: Container(
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(24),
+      appBar: AppBar(title: const Text('Food Details'), centerTitle: true),
+      bottomNavigationBar: canOrder
+          ? SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(18, 8, 18, 12),
+                child: FilledButton.icon(
+                  onPressed: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) =>
+                          CheckoutPage(customerId: customerUid!, food: food),
+                    ),
+                  ),
+                  icon: const Icon(Icons.shopping_bag_rounded),
+                  label: Text('Order Now · ${Helpers.currency(food.price)}'),
+                ),
+              ),
+            )
+          : null,
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.fromLTRB(18, 18, 18, 30),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            GradientHeader(
+              label: food.category.isEmpty ? 'Dish' : food.category,
+              title: food.name,
+              trailing: Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.15),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.fastfood_rounded,
+                  color: Colors.white,
+                  size: 30,
+                ),
+              ),
+              footer: HeaderInfoTile(
+                icon: Icons.currency_rupee_rounded,
+                text: Helpers.currency(food.price),
+              ),
             ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+            const SizedBox(height: 20),
+            SectionCard(
+              child: Column(
+                children: [
+                  DetailRow(
+                    icon: Icons.description_outlined,
+                    title: 'Description',
+                    value: food.description.isEmpty
+                        ? 'No description'
+                        : food.description,
+                  ),
+                  const Divider(height: 26),
+                  DetailRow(
+                    icon: Icons.eco_outlined,
+                    title: 'Type',
+                    valueWidget: _Pill(
+                      text: food.isVeg ? 'Veg' : 'Non-Veg',
+                      color: food.isVeg ? Colors.green : Colors.red,
+                    ),
+                  ),
+                  const Divider(height: 26),
+                  DetailRow(
+                    icon: Icons.inventory_2_outlined,
+                    title: 'Availability',
+                    valueWidget: _Pill(
+                      text: food.isAvailable ? 'Available' : 'Unavailable',
+                      color: food.isAvailable ? Colors.blue : Colors.grey,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 25),
+            const SectionTitle(
+              title: 'Nutrition Information',
+              caption: 'Per serving.',
+            ),
+            GridView.count(
+              crossAxisCount: 2,
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              mainAxisSpacing: 12,
+              crossAxisSpacing: 12,
+              childAspectRatio: 1.65,
               children: [
-                if (food.imageUrl.isNotEmpty)
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(20),
-                    // child: Image.network(
-                    //   food.imageUrl,
-                    //   height: 220,
-                    //   width: double.infinity,
-                    //   fit: BoxFit.cover,
-                    // ),
-                  )
-                else
-                  Container(
-                    height: 220,
-                    width: double.infinity,
-                    decoration: BoxDecoration(
-                      color: Colors.orange.shade100,
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: const Icon(Icons.fastfood, size: 80),
-                  ),
-
-                const SizedBox(height: 20),
-
-                Text(
-                  food.name,
-                  style: const TextStyle(
-                    fontSize: 26,
-                    fontWeight: FontWeight.bold,
-                  ),
+                NutritionInfoCard(
+                  title: 'Calories',
+                  value: '${_num(food.calories)} kcal',
+                  icon: Icons.local_fire_department_rounded,
                 ),
-
-                const SizedBox(height: 8),
-
-                Text(
-                  food.description,
-                  style: const TextStyle(fontSize: 16),
+                NutritionInfoCard(
+                  title: 'Protein',
+                  value: '${_num(food.protein)} g',
+                  icon: Icons.fitness_center_rounded,
                 ),
-
-                const SizedBox(height: 12),
-
-                Text(
-                  '₹${food.price}',
-                  style: const TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xffFF6B6B),
-                  ),
+                NutritionInfoCard(
+                  title: 'Carbs',
+                  value: '${_num(food.carbs)} g',
+                  icon: Icons.bakery_dining_rounded,
                 ),
-
-                const SizedBox(height: 20),
-
-                const Text(
-                  'Nutrition Information',
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-
-                const SizedBox(height: 16),
-
-                Wrap(
-                  spacing: 12,
-                  runSpacing: 12,
-                  children: [
-                    NutritionInfoCard(
-                      title: 'Calories',
-                      value: '${food.calories}',
-                    ),
-                    NutritionInfoCard(
-                      title: 'Protein',
-                      value: '${food.protein}g',
-                    ),
-                    NutritionInfoCard(
-                      title: 'Carbs',
-                      value: '${food.carbs}g',
-                    ),
-                    NutritionInfoCard(
-                      title: 'Fat',
-                      value: '${food.fat}g',
-                    ),
-                  ],
-                ),
-
-                const SizedBox(height: 24),
-
-                Row(
-                  children: [
-                    Chip(
-                      label: Text(food.isVeg ? 'Veg' : 'Non-Veg'),
-                      backgroundColor:
-                          food.isVeg ? Colors.green.shade100 : Colors.red.shade100,
-                    ),
-                    const SizedBox(width: 12),
-                    Chip(
-                      label: Text(food.isAvailable ? 'Available' : 'Unavailable'),
-                    ),
-                  ],
+                NutritionInfoCard(
+                  title: 'Fat',
+                  value: '${_num(food.fat)} g',
+                  icon: Icons.water_drop_rounded,
                 ),
               ],
             ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _Pill extends StatelessWidget {
+  final String text;
+  final Color color;
+
+  const _Pill({required this.text, required this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.12),
+          borderRadius: BorderRadius.circular(30),
+          border: Border.all(color: color.withValues(alpha: 0.35)),
+        ),
+        child: Text(
+          text,
+          style: TextStyle(
+            color: color,
+            fontSize: 12,
+            fontWeight: FontWeight.w700,
           ),
         ),
       ),

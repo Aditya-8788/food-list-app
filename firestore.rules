@@ -24,8 +24,9 @@ service cloud.firestore {
     match /hotels/{hotelId} {
       allow read: if signedIn();
       allow create: if isUser(request.resource.data.ownerId);
-      allow update, delete: if isUser(resource.data.ownerId)
+      allow update: if isUser(resource.data.ownerId)
         && request.resource.data.ownerId == resource.data.ownerId;
+      allow delete: if isUser(resource.data.ownerId);
     }
 
     // Menu items: anyone signed in can view; only the owning hotel can change.

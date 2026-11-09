@@ -1,7 +1,7 @@
-// TODO: Implement edit customer profile page.
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../../core/widgets/app_widgets.dart';
 import '../../domain/entities/customer_entity.dart';
 import '../bloc/customer_bloc.dart';
 import '../bloc/customer_event.dart';
@@ -10,10 +10,7 @@ import '../bloc/customer_state.dart';
 class EditCustomerProfilePage extends StatefulWidget {
   final CustomerEntity customer;
 
-  const EditCustomerProfilePage({
-    super.key,
-    required this.customer,
-  });
+  const EditCustomerProfilePage({super.key, required this.customer});
 
   @override
   State<EditCustomerProfilePage> createState() =>
@@ -44,13 +41,13 @@ class _EditCustomerProfilePageState extends State<EditCustomerProfilePage> {
 
   void updateProfile() {
     context.read<CustomerBloc>().add(
-          UpdateCustomerProfileRequested(
-            uid: widget.customer.uid,
-            name: nameController.text.trim(),
-            phone: phoneController.text.trim(),
-            address: addressController.text.trim(),
-          ),
-        );
+      UpdateCustomerProfileRequested(
+        uid: widget.customer.uid,
+        name: nameController.text.trim(),
+        phone: phoneController.text.trim(),
+        address: addressController.text.trim(),
+      ),
+    );
   }
 
   @override
@@ -58,8 +55,7 @@ class _EditCustomerProfilePageState extends State<EditCustomerProfilePage> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Edit Customer Profile'),
-        backgroundColor: const Color(0xffFF6B6B),
-        foregroundColor: Colors.white,
+        centerTitle: true,
       ),
       body: BlocConsumer<CustomerBloc, CustomerState>(
         listener: (context, state) {
@@ -71,77 +67,52 @@ class _EditCustomerProfilePageState extends State<EditCustomerProfilePage> {
           }
 
           if (state is CustomerError) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text(state.message)),
-            );
+            ScaffoldMessenger.of(
+              context,
+            ).showSnackBar(SnackBar(content: Text(state.message)));
           }
         },
         builder: (context, state) {
-          return Container(
-            width: double.infinity,
-            height: double.infinity,
-            padding: const EdgeInsets.all(24),
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  Color(0xffFF6B6B),
-                  Color(0xffFF8E53),
-                ],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-            ),
-            child: Center(
-              child: SingleChildScrollView(
-                child: Container(
-                  padding: const EdgeInsets.all(24),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(24),
-                  ),
+          return SingleChildScrollView(
+            padding: const EdgeInsets.fromLTRB(18, 18, 18, 30),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const SectionTitle(
+                  title: 'Personal Details',
+                  caption: 'Used to pre-fill your delivery details.',
+                ),
+                SectionCard(
                   child: Column(
                     children: [
-                      TextField(
+                      FormFieldBox(
                         controller: nameController,
-                        decoration: const InputDecoration(
-                          labelText: 'Name',
-                          border: OutlineInputBorder(),
-                        ),
+                        label: 'Name',
+                        icon: Icons.person_outline_rounded,
                       ),
-                      const SizedBox(height: 16),
-                      TextField(
+                      FormFieldBox(
                         controller: phoneController,
+                        label: 'Phone',
+                        icon: Icons.phone_outlined,
                         keyboardType: TextInputType.phone,
-                        decoration: const InputDecoration(
-                          labelText: 'Phone',
-                          border: OutlineInputBorder(),
-                        ),
                       ),
-                      const SizedBox(height: 16),
-                      TextField(
+                      FormFieldBox(
                         controller: addressController,
+                        label: 'Address',
+                        icon: Icons.location_on_outlined,
                         maxLines: 3,
-                        decoration: const InputDecoration(
-                          labelText: 'Address',
-                          border: OutlineInputBorder(),
-                        ),
                       ),
-                      const SizedBox(height: 24),
-                      state is CustomerLoading
-                          ? const CircularProgressIndicator()
-                          : ElevatedButton(
-                              onPressed: updateProfile,
-                              style: ElevatedButton.styleFrom(
-                                minimumSize: const Size(double.infinity, 52),
-                                backgroundColor: const Color(0xffFF6B6B),
-                                foregroundColor: Colors.white,
-                              ),
-                              child: const Text('Update Profile'),
-                            ),
                     ],
                   ),
                 ),
-              ),
+                const SizedBox(height: 24),
+                state is CustomerLoading
+                    ? const Center(child: CircularProgressIndicator())
+                    : ElevatedButton(
+                        onPressed: updateProfile,
+                        child: const Text('Update Profile'),
+                      ),
+              ],
             ),
           );
         },

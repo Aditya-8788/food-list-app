@@ -41,6 +41,14 @@ import 'features/food/domain/usecases/get_hotel_foods_usecase.dart';
 import 'features/food/domain/usecases/update_food_usecase.dart';
 import 'features/food/presentation/bloc/food_bloc.dart';
 
+// Orders
+import 'features/orders/data/datasource/order_remote_datasource.dart';
+import 'features/orders/data/repositories/order_repository_impl.dart';
+import 'features/orders/domain/repositories/order_repository.dart';
+import 'features/orders/domain/usecases/order_usecases.dart';
+import 'features/orders/presentation/bloc/order_action_cubit.dart';
+import 'features/orders/presentation/bloc/order_bloc.dart';
+
 final sl = GetIt.instance;
 
 Future<void> initDependencies() async {
@@ -48,15 +56,10 @@ Future<void> initDependencies() async {
   sl.registerLazySingleton<FirebaseFirestore>(() => FirebaseFirestore.instance);
 
   sl.registerLazySingleton<AuthRemoteDataSource>(
-    () => AuthRemoteDataSourceImpl(
-      firebaseAuth: sl(),
-      firestore: sl(),
-    ),
+    () => AuthRemoteDataSourceImpl(firebaseAuth: sl(), firestore: sl()),
   );
 
-  sl.registerLazySingleton<AuthRepository>(
-    () => AuthRepositoryImpl(sl()),
-  );
+  sl.registerLazySingleton<AuthRepository>(() => AuthRepositoryImpl(sl()));
 
   sl.registerLazySingleton(() => LoginUseCase(sl()));
   sl.registerLazySingleton(() => SignupUseCase(sl()));
@@ -96,9 +99,7 @@ Future<void> initDependencies() async {
     () => HotelRemoteDataSourceImpl(firestore: sl()),
   );
 
-  sl.registerLazySingleton<HotelRepository>(
-    () => HotelRepositoryImpl(sl()),
-  );
+  sl.registerLazySingleton<HotelRepository>(() => HotelRepositoryImpl(sl()));
 
   sl.registerLazySingleton(() => CreateHotelProfileUseCase(sl()));
   sl.registerLazySingleton(() => GetHotelProfileUseCase(sl()));
@@ -116,9 +117,7 @@ Future<void> initDependencies() async {
     () => FoodRemoteDataSourceImpl(firestore: sl()),
   );
 
-  sl.registerLazySingleton<FoodRepository>(
-    () => FoodRepositoryImpl(sl()),
-  );
+  sl.registerLazySingleton<FoodRepository>(() => FoodRepositoryImpl(sl()));
 
   sl.registerLazySingleton(() => AddFoodUseCase(sl()));
   sl.registerLazySingleton(() => UpdateFoodUseCase(sl()));
@@ -133,6 +132,33 @@ Future<void> initDependencies() async {
       deleteFoodUseCase: sl(),
       getAllFoodsUseCase: sl(),
       getHotelFoodsUseCase: sl(),
+    ),
+  );
+
+  _initOrders();
+}
+
+void _initOrders() {
+  sl.registerLazySingleton<OrderRemoteDataSource>(
+    () => OrderRemoteDataSourceImpl(firestore: sl()),
+  );
+
+  sl.registerLazySingleton<OrderRepository>(() => OrderRepositoryImpl(sl()));
+
+  sl.registerLazySingleton(() => PlaceOrderUseCase(sl()));
+  sl.registerLazySingleton(() => WatchCustomerOrdersUseCase(sl()));
+  sl.registerLazySingleton(() => WatchHotelOrdersUseCase(sl()));
+  sl.registerLazySingleton(() => WatchOrderUseCase(sl()));
+  sl.registerLazySingleton(() => UpdateOrderStatusUseCase(sl()));
+
+  sl.registerFactory(
+    () => OrderBloc(watchCustomerOrders: sl(), watchHotelOrders: sl()),
+  );
+
+  sl.registerFactory(
+    () => OrderActionCubit(
+      placeOrderUseCase: sl(),
+      updateOrderStatusUseCase: sl(),
     ),
   );
 }

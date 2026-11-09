@@ -1,7 +1,7 @@
-// TODO: Implement manage food page.
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../../core/widgets/app_widgets.dart';
 import '../bloc/food_bloc.dart';
 import '../bloc/food_event.dart';
 import '../bloc/food_state.dart';
@@ -37,21 +37,19 @@ class _ManageFoodPageState extends State<ManageFoodPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Manage Food'),
-        backgroundColor: const Color(0xffFF6B6B),
-        foregroundColor: Colors.white,
+        titleSpacing: 18,
+        title: const AppBarTitle(
+          title: 'Manage Food',
+          subtitle: 'Swipe left on a dish to delete it',
+        ),
       ),
       floatingActionButton: FloatingActionButton(
-        backgroundColor: const Color(0xffFF6B6B),
-        foregroundColor: Colors.white,
         onPressed: () async {
           await Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (_) => AddFoodPage(
-                ownerId: widget.ownerId,
-                hotelId: widget.hotelId,
-              ),
+              builder: (_) =>
+                  AddFoodPage(ownerId: widget.ownerId, hotelId: widget.hotelId),
             ),
           );
           refreshFoods();
@@ -61,35 +59,47 @@ class _ManageFoodPageState extends State<ManageFoodPage> {
       body: BlocConsumer<FoodBloc, FoodState>(
         listener: (context, state) {
           if (state is FoodActionSuccess) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text(state.message)),
-            );
+            ScaffoldMessenger.of(
+              context,
+            ).showSnackBar(SnackBar(content: Text(state.message)));
             refreshFoods();
           }
         },
         builder: (context, state) {
           if (state is FoodLoading) {
-            return const Center(child: CircularProgressIndicator());
+            return const LoadingView(message: 'Loading menu...');
           }
 
           if (state is FoodLoaded) {
             if (state.foods.isEmpty) {
-              return const Center(child: Text('No food added yet'));
+              return const MessageView(
+                icon: Icons.no_meals_outlined,
+                title: 'No food added yet',
+                message: 'Tap + to add your first dish.',
+              );
             }
 
             return ListView.builder(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.fromLTRB(18, 18, 18, 90),
               itemCount: state.foods.length,
               itemBuilder: (context, index) {
                 final food = state.foods[index];
 
                 return Dismissible(
                   key: ValueKey(food.id),
+                  direction: DismissDirection.endToStart,
                   background: Container(
-                    color: Colors.red,
+                    margin: const EdgeInsets.only(bottom: 14),
+                    decoration: BoxDecoration(
+                      color: Colors.red.shade400,
+                      borderRadius: BorderRadius.circular(18),
+                    ),
                     alignment: Alignment.centerRight,
                     padding: const EdgeInsets.only(right: 20),
-                    child: const Icon(Icons.delete, color: Colors.white),
+                    child: const Icon(
+                      Icons.delete_outline_rounded,
+                      color: Colors.white,
+                    ),
                   ),
                   confirmDismiss: (_) async {
                     return await showDialog<bool>(
@@ -139,7 +149,11 @@ class _ManageFoodPageState extends State<ManageFoodPage> {
           }
 
           if (state is FoodError) {
-            return Center(child: Text(state.message));
+            return MessageView(
+              icon: Icons.cloud_off_rounded,
+              title: 'Unable to load menu',
+              message: state.message,
+            );
           }
 
           return const SizedBox();

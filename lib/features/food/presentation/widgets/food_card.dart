@@ -1,6 +1,6 @@
-// TODO: Implement food card widget.
 import 'package:flutter/material.dart';
 
+import '../../../../core/utils/helpers.dart';
 import '../../domain/entities/food_entity.dart';
 
 class FoodCard extends StatelessWidget {
@@ -17,38 +17,94 @@ class FoodCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      margin: const EdgeInsets.only(bottom: 16),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(18),
-      ),
-      child: ListTile(
-        onTap: onTap,
-        leading: CircleAvatar(
-          radius: 28,
-          backgroundColor: const Color.fromARGB(255, 251, 239, 239),
-          child: Text(
-            itemNumber.toString(),
-            style: const TextStyle(
-              color: Color.fromARGB(255, 232, 48, 48),
-              fontWeight: FontWeight.bold,
+    final primary = Theme.of(context).colorScheme.primary;
 
-              fontSize: 25,
-            ),
-          ),
-        ),
-        title: Text(
-          food.name,
-          style: const TextStyle(fontWeight: FontWeight.bold),
-        ),
-        subtitle: Text(
-          '${food.calories} kcal | Protein ${food.protein}g',
-        ),
-        trailing: Text(
-          '₹${food.price}',
-          style: const TextStyle(
-            fontWeight: FontWeight.bold,
-            color: Color(0xffFF6B6B),
+    return Card(
+      margin: const EdgeInsets.only(bottom: 14),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(18),
+        child: Padding(
+          padding: const EdgeInsets.all(15),
+          child: Row(
+            children: [
+              CircleAvatar(
+                radius: 26,
+                backgroundColor: primary.withValues(alpha: 0.1),
+                child: Text(
+                  itemNumber.toString(),
+                  style: TextStyle(
+                    color: primary,
+                    fontWeight: FontWeight.w900,
+                    fontSize: 20,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 13),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.circle,
+                          size: 10,
+                          color: food.isVeg ? Colors.green : Colors.red,
+                        ),
+                        const SizedBox(width: 6),
+                        Expanded(
+                          child: Text(
+                            food.name,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 5),
+                    Text(
+                      '${food.calories.toStringAsFixed(0)} kcal · '
+                      'Protein ${food.protein.toStringAsFixed(0)}g'
+                      '${food.category.isNotEmpty ? ' · ${food.category}' : ''}',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: Colors.grey.shade600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 10),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text(
+                    Helpers.currency(food.price),
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w900,
+                      color: primary,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    food.isAvailable ? 'Available' : 'Unavailable',
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      color: food.isAvailable ? Colors.green : Colors.grey,
+                    ),
+                  ),
+                ],
+              ),
+            ],
           ),
         ),
       ),

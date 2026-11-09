@@ -1,7 +1,7 @@
-// TODO: Implement add food page.
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../../core/widgets/app_widgets.dart';
 import '../../domain/entities/food_entity.dart';
 import '../bloc/food_bloc.dart';
 import '../bloc/food_event.dart';
@@ -73,9 +73,7 @@ class _AddFoodPageState extends State<AddFoodPage> {
     super.dispose();
   }
 
-  double parseDouble(String value) {
-    return double.tryParse(value) ?? 0;
-  }
+  double parseDouble(String value) => double.tryParse(value) ?? 0;
 
   void saveFood() {
     final food = FoodEntity(
@@ -104,108 +102,156 @@ class _AddFoodPageState extends State<AddFoodPage> {
 
   @override
   Widget build(BuildContext context) {
+    const number = TextInputType.numberWithOptions(decimal: true);
+
     return Scaffold(
       appBar: AppBar(
         title: Text(isEdit ? 'Edit Food' : 'Add Food'),
-        backgroundColor: const Color(0xffFF6B6B),
-        foregroundColor: Colors.white,
+        centerTitle: true,
       ),
       body: BlocConsumer<FoodBloc, FoodState>(
         listener: (context, state) {
           if (state is FoodActionSuccess) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text(state.message)),
-            );
+            ScaffoldMessenger.of(
+              context,
+            ).showSnackBar(SnackBar(content: Text(state.message)));
             Navigator.pop(context);
           }
 
           if (state is FoodError) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text(state.message)),
-            );
+            ScaffoldMessenger.of(
+              context,
+            ).showSnackBar(SnackBar(content: Text(state.message)));
           }
         },
         builder: (context, state) {
-          return Container(
-            padding: const EdgeInsets.all(20),
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  Color(0xffFF6B6B),
-                  Color(0xffFF8E53),
-                ],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-            ),
-            child: SingleChildScrollView(
-              child: Container(
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(24),
+          return SingleChildScrollView(
+            padding: const EdgeInsets.fromLTRB(18, 18, 18, 30),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const SectionTitle(title: 'Basic Info'),
+                SectionCard(
+                  child: Column(
+                    children: [
+                      FormFieldBox(
+                        controller: nameController,
+                        label: 'Food Name',
+                        icon: Icons.fastfood_outlined,
+                      ),
+                      FormFieldBox(
+                        controller: descriptionController,
+                        label: 'Description',
+                        icon: Icons.description_outlined,
+                        maxLines: 2,
+                      ),
+                      FormFieldBox(
+                        controller: priceController,
+                        label: 'Price (₹)',
+                        icon: Icons.currency_rupee_rounded,
+                        keyboardType: number,
+                      ),
+                      FormFieldBox(
+                        controller: categoryController,
+                        label: 'Category',
+                        icon: Icons.category_outlined,
+                      ),
+                      FormFieldBox(
+                        controller: imageController,
+                        label: 'Image URL',
+                        icon: Icons.image_outlined,
+                      ),
+                    ],
+                  ),
                 ),
-                child: Column(
-                  children: [
-                    _field(nameController, 'Food Name'),
-                    _field(descriptionController, 'Description'),
-                    _field(priceController, 'Price', number: true),
-                    _field(imageController, 'Image URL'),
-                    _field(categoryController, 'Category'),
-                    _field(caloriesController, 'Calories', number: true),
-                    _field(proteinController, 'Protein', number: true),
-                    _field(carbsController, 'Carbs', number: true),
-                    _field(fatController, 'Fat', number: true),
-                    SwitchListTile(
-                      title: const Text('Veg Food'),
-                      value: isVeg,
-                      onChanged: (value) {
-                        setState(() => isVeg = value);
-                      },
-                    ),
-                    SwitchListTile(
-                      title: const Text('Available'),
-                      value: isAvailable,
-                      onChanged: (value) {
-                        setState(() => isAvailable = value);
-                      },
-                    ),
-                    const SizedBox(height: 20),
-                    state is FoodLoading
-                        ? const CircularProgressIndicator()
-                        : ElevatedButton(
-                            onPressed: saveFood,
-                            style: ElevatedButton.styleFrom(
-                              minimumSize: const Size(double.infinity, 52),
-                              backgroundColor: const Color(0xffFF6B6B),
-                              foregroundColor: Colors.white,
+                const SizedBox(height: 25),
+                const SectionTitle(title: 'Nutrition', caption: 'Per serving.'),
+                SectionCard(
+                  child: Column(
+                    children: [
+                      Row(
+                        children: [
+                          Expanded(
+                            child: FormFieldBox(
+                              controller: caloriesController,
+                              label: 'Calories',
+                              keyboardType: number,
                             ),
-                            child: Text(isEdit ? 'Update Food' : 'Add Food'),
                           ),
-                  ],
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: FormFieldBox(
+                              controller: proteinController,
+                              label: 'Protein (g)',
+                              keyboardType: number,
+                            ),
+                          ),
+                        ],
+                      ),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: FormFieldBox(
+                              controller: carbsController,
+                              label: 'Carbs (g)',
+                              keyboardType: number,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: FormFieldBox(
+                              controller: fatController,
+                              label: 'Fat (g)',
+                              keyboardType: number,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
-              ),
+                const SizedBox(height: 25),
+                SectionCard(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 18,
+                    vertical: 6,
+                  ),
+                  child: Column(
+                    children: [
+                      SwitchListTile(
+                        contentPadding: EdgeInsets.zero,
+                        title: const Text(
+                          'Veg Food',
+                          style: TextStyle(fontWeight: FontWeight.w700),
+                        ),
+                        value: isVeg,
+                        onChanged: (value) => setState(() => isVeg = value),
+                      ),
+                      const Divider(height: 1),
+                      SwitchListTile(
+                        contentPadding: EdgeInsets.zero,
+                        title: const Text(
+                          'Available',
+                          style: TextStyle(fontWeight: FontWeight.w700),
+                        ),
+                        value: isAvailable,
+                        onChanged: (value) =>
+                            setState(() => isAvailable = value),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 24),
+                state is FoodLoading
+                    ? const Center(child: CircularProgressIndicator())
+                    : ElevatedButton(
+                        onPressed: saveFood,
+                        child: Text(isEdit ? 'Update Food' : 'Add Food'),
+                      ),
+              ],
             ),
           );
         },
-      ),
-    );
-  }
-
-  Widget _field(
-    TextEditingController controller,
-    String label, {
-    bool number = false,
-  }) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 14),
-      child: TextField(
-        controller: controller,
-        keyboardType: number ? TextInputType.number : TextInputType.text,
-        decoration: InputDecoration(
-          labelText: label,
-          border: const OutlineInputBorder(),
-        ),
       ),
     );
   }

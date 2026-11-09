@@ -1,7 +1,8 @@
-// TODO: Implement login page.
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../../core/widgets/app_widgets.dart';
+import '../widgets/auth_scaffold.dart';
 import '../bloc/auth_bloc.dart';
 import '../bloc/auth_event.dart';
 import '../bloc/auth_state.dart';
@@ -32,11 +33,11 @@ class _LoginPageState extends State<LoginPage> {
 
   void login() {
     context.read<AuthBloc>().add(
-          AuthLoginRequested(
-            email: emailController.text.trim(),
-            password: passwordController.text.trim(),
-          ),
-        );
+      AuthLoginRequested(
+        email: emailController.text.trim(),
+        password: passwordController.text.trim(),
+      ),
+    );
   }
 
   void navigateByRole(AuthAuthenticated state) {
@@ -63,131 +64,78 @@ class _LoginPageState extends State<LoginPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: BlocConsumer<AuthBloc, AuthState>(
-        listener: (context, state) {
-          if (state is AuthAuthenticated) {
-            navigateByRole(state);
-          }
+    return BlocConsumer<AuthBloc, AuthState>(
+      listener: (context, state) {
+        if (state is AuthAuthenticated) {
+          navigateByRole(state);
+        }
 
-          if (state is AuthRoleRequired) {
-            Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(
-                builder: (_) => RoleSelectionPage(user: state.user),
-              ),
-            );
-          }
-
-          if (state is AuthError) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text(state.message)),
-            );
-          }
-        },
-        builder: (context, state) {
-          return Container(
-            width: double.infinity,
-            height: double.infinity,
-            padding: const EdgeInsets.all(24),
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  Color(0xffFF6B6B),
-                  Color(0xffFF8E53),
-                ],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-            ),
-            child: Center(
-              child: SingleChildScrollView(
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 500),
-                  padding: const EdgeInsets.all(24),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(24),
-                  ),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Text(
-                        'Food Delivery App',
-                        style: TextStyle(
-                          fontSize: 28,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: 30),
-                      TextField(
-                        controller: emailController,
-                        decoration: const InputDecoration(
-                          labelText: 'Email',
-                          border: OutlineInputBorder(),
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      TextField(
-                        controller: passwordController,
-                        obscureText: !isPasswordVisible,
-                        decoration: InputDecoration(
-                          labelText: 'Password',
-                          border: const OutlineInputBorder(),
-                          suffixIcon: IconButton(
-                            icon: Icon(
-                              isPasswordVisible
-                                  ? Icons.visibility
-                                  : Icons.visibility_off,
-                            ),
-                            onPressed: () {
-                              setState(() {
-                                isPasswordVisible = !isPasswordVisible;
-                              });
-                            },
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 24),
-                      state is AuthLoading
-                          ? const CircularProgressIndicator()
-                          : ElevatedButton(
-                              onPressed: login,
-                              style: ElevatedButton.styleFrom(
-                                minimumSize: const Size(double.infinity, 52),
-                                backgroundColor: const Color(0xffFF6B6B),
-                                foregroundColor: Colors.white,
-                              ),
-                              child: const Text('Login'),
-                            ),
-                      const SizedBox(height: 16),
-                      // GoogleLoginButton(
-                      //   onPressed: () {
-                      //     context.read<AuthBloc>().add(
-                      //           AuthGoogleLoginRequested(),
-                      //         );
-                      //   },
-                      // ),
-                      const SizedBox(height: 16),
-                      TextButton(
-                        onPressed: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => const SignupPage(),
-                            ),
-                          );
-                        },
-                        child: const Text("Don't have account? Sign Up"),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
+        if (state is AuthRoleRequired) {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (_) => RoleSelectionPage(user: state.user),
             ),
           );
-        },
-      ),
+        }
+
+        if (state is AuthError) {
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text(state.message)));
+        }
+      },
+      builder: (context, state) {
+        return AuthScaffold(
+          title: 'Welcome back',
+          subtitle: 'Log in to order food and track it live',
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              FormFieldBox(
+                controller: emailController,
+                label: 'Email',
+                icon: Icons.email_outlined,
+                keyboardType: TextInputType.emailAddress,
+              ),
+              FormFieldBox(
+                controller: passwordController,
+                label: 'Password',
+                icon: Icons.lock_outline_rounded,
+                obscureText: !isPasswordVisible,
+                suffix: IconButton(
+                  icon: Icon(
+                    isPasswordVisible
+                        ? Icons.visibility_outlined
+                        : Icons.visibility_off_outlined,
+                  ),
+                  onPressed: () {
+                    setState(() => isPasswordVisible = !isPasswordVisible);
+                  },
+                ),
+              ),
+              const SizedBox(height: 10),
+              state is AuthLoading
+                  ? const Center(child: CircularProgressIndicator())
+                  : ElevatedButton(
+                      onPressed: login,
+                      child: const Text('Login'),
+                    ),
+              const SizedBox(height: 12),
+              TextButton(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const SignupPage()),
+                  );
+                },
+                child: const Text("Don't have an account? Sign Up"),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 }

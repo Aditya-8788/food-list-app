@@ -5,17 +5,17 @@ import '../../../../core/utils/helpers.dart';
 import '../../../../core/widgets/app_widgets.dart';
 import '../../../../injection_container.dart';
 import '../../../customer/domain/usecases/get_customer_profile_usecase.dart';
-import '../../../food/domain/entities/food_entity.dart';
 import '../../domain/entities/order_entity.dart';
+import '../bloc/cart_cubit.dart';
 import '../bloc/order_action_cubit.dart';
+import '../widgets/cart_widgets.dart';
 import 'order_tracking_page.dart';
 
-/// Pick a quantity, confirm delivery details and place the order.
+/// Cart review + delivery details + place order.
 class CheckoutPage extends StatefulWidget {
   final String customerId;
-  final FoodEntity food;
 
-  const CheckoutPage({super.key, required this.customerId, required this.food});
+  const CheckoutPage({super.key, required this.customerId});
 
   @override
   State<CheckoutPage> createState() => _CheckoutPageState();
@@ -25,7 +25,6 @@ class _CheckoutPageState extends State<CheckoutPage> {
   final _nameController = TextEditingController();
   final _phoneController = TextEditingController();
   final _addressController = TextEditingController();
-  int _quantity = 1;
 
   @override
   void initState() {
@@ -61,9 +60,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
     super.dispose();
   }
 
-  double get _total => widget.food.price * _quantity;
-
-  void _placeOrder(BuildContext context) {
+  void _placeOrder(BuildContext context, CartState cart) {
     if (_nameController.text.trim().isEmpty ||
         _addressController.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -75,7 +72,6 @@ class _CheckoutPageState extends State<CheckoutPage> {
     }
 
     final now = DateTime.now();
-    final food = widget.food;
 
     context.read<OrderActionCubit>().placeOrder(
       OrderEntity(
@@ -84,19 +80,11 @@ class _CheckoutPageState extends State<CheckoutPage> {
         customerName: _nameController.text.trim(),
         customerPhone: _phoneController.text.trim(),
         deliveryAddress: _addressController.text.trim(),
-        hotelId: food.hotelId,
-        hotelOwnerId: food.ownerId,
+        hotelId: cart.hotelId ?? '',
+        hotelOwnerId: cart.hotelOwnerId ?? '',
         hotelName: 'Restaurant',
-        items: [
-          OrderItemEntity(
-            foodId: food.id,
-            name: food.name,
-            price: food.price,
-            quantity: _quantity,
-            isVeg: food.isVeg,
-          ),
-        ],
-        totalAmount: _total,
+        items: cart.items.map((item) => item.toOrderItem()).toList(),
+        totalAmount: cart.total,
         status: OrderStatus.placed,
         placedAt: now,
         timeline: [OrderStatusUpdate(status: OrderStatus.placed, time: now)],
@@ -106,14 +94,12 @@ class _CheckoutPageState extends State<CheckoutPage> {
 
   @override
   Widget build(BuildContext context) {
-    final food = widget.food;
-    final primary = Theme.of(context).colorScheme.primary;
-
     return BlocProvider(
       create: (_) => sl<OrderActionCubit>(),
       child: BlocConsumer<OrderActionCubit, OrderActionState>(
         listener: (context, state) {
           if (state is OrderActionSuccess && state.orderId != null) {
+            context.read<CartCubit>().clear();
             Navigator.pushReplacement(
               context,
               MaterialPageRoute(
@@ -127,148 +113,34 @@ class _CheckoutPageState extends State<CheckoutPage> {
             ).showSnackBar(SnackBar(content: Text(state.message)));
           }
         },
-        builder: (context, state) {
-          final busy = state is OrderActionInProgress;
+        builder: (context, orderState) {
+          final busy = orderState is OrderActionInProgress;
+          final cart = context.watch<CartCubit>().state;
 
           return Scaffold(
-            appBar: AppBar(title: const Text('Checkout'), centerTitle: true),
-            bottomNavigationBar: SafeArea(
-              child: Container(
-                padding: const EdgeInsets.fromLTRB(18, 12, 18, 12),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  border: Border(top: BorderSide(color: Colors.grey.shade200)),
-                ),
-                child: Row(
-                  children: [
-                    Column(
-                      mainAxisSize: MainAxisSize.min,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Total',
-                          style: TextStyle(color: Colors.grey.shade600),
-                        ),
-                        Text(
-                          Helpers.currency(_total),
-                          style: const TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.w900,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(width: 18),
-                    Expanded(
-                      child: FilledButton.icon(
-                        onPressed: busy ? null : () => _placeOrder(context),
-                        icon: busy
-                            ? const SizedBox(
-                                width: 18,
-                                height: 18,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                ),
-                              )
-                            : const Icon(Icons.shopping_bag_rounded),
-                        label: const Text('Place Order'),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            body: SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(18, 18, 18, 30),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const SectionTitle(title: 'Your Item'),
-                  SectionCard(
-                    child: Row(
-                      children: [
-                        const IconBadge(icon: Icons.fastfood_rounded, size: 52),
-                        const SizedBox(width: 13),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                food.name,
-                                style: const TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w800,
-                                ),
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                Helpers.currency(food.price),
-                                style: TextStyle(
-                                  color: primary,
-                                  fontWeight: FontWeight.w700,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        _QuantityStepper(
-                          value: _quantity,
-                          onChanged: (v) => setState(() => _quantity = v),
-                        ),
-                      ],
-                    ),
+            appBar: AppBar(title: const Text('Your Cart'), centerTitle: true),
+            bottomNavigationBar: cart.isEmpty
+                ? null
+                : _PlaceOrderBar(
+                    total: cart.total,
+                    busy: busy,
+                    onPressed: () => _placeOrder(context, cart),
                   ),
-                  const SizedBox(height: 25),
-                  const SectionTitle(
-                    title: 'Delivery Details',
-                    caption: 'Where should we bring your food?',
+            body: cart.isEmpty
+                ? MessageView(
+                    icon: Icons.shopping_bag_outlined,
+                    title: 'Your cart is empty',
+                    message: 'Add some dishes and they will show up here.',
+                    buttonText: 'Browse foods',
+                    buttonIcon: Icons.restaurant_menu_rounded,
+                    onButtonPressed: () => Navigator.pop(context),
+                  )
+                : _CartBody(
+                    cart: cart,
+                    nameController: _nameController,
+                    phoneController: _phoneController,
+                    addressController: _addressController,
                   ),
-                  SectionCard(
-                    child: Column(
-                      children: [
-                        FormFieldBox(
-                          controller: _nameController,
-                          label: 'Name',
-                          icon: Icons.person_outline_rounded,
-                        ),
-                        FormFieldBox(
-                          controller: _phoneController,
-                          label: 'Phone',
-                          icon: Icons.phone_outlined,
-                          keyboardType: TextInputType.phone,
-                        ),
-                        FormFieldBox(
-                          controller: _addressController,
-                          label: 'Delivery address',
-                          icon: Icons.location_on_outlined,
-                          maxLines: 3,
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 25),
-                  const SectionTitle(title: 'Bill Summary'),
-                  SectionCard(
-                    child: Column(
-                      children: [
-                        _BillRow(
-                          label: '${food.name} × $_quantity',
-                          value: Helpers.currency(_total),
-                        ),
-                        const SizedBox(height: 10),
-                        const _BillRow(label: 'Delivery fee', value: 'FREE'),
-                        const Divider(height: 26),
-                        _BillRow(
-                          label: 'To pay',
-                          value: Helpers.currency(_total),
-                          bold: true,
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
           );
         },
       ),
@@ -276,35 +148,191 @@ class _CheckoutPageState extends State<CheckoutPage> {
   }
 }
 
-class _QuantityStepper extends StatelessWidget {
-  final int value;
-  final ValueChanged<int> onChanged;
+class _CartBody extends StatelessWidget {
+  final CartState cart;
+  final TextEditingController nameController;
+  final TextEditingController phoneController;
+  final TextEditingController addressController;
 
-  const _QuantityStepper({required this.value, required this.onChanged});
+  const _CartBody({
+    required this.cart,
+    required this.nameController,
+    required this.phoneController,
+    required this.addressController,
+  });
 
   @override
   Widget build(BuildContext context) {
+    final cubit = context.read<CartCubit>();
     final primary = Theme.of(context).colorScheme.primary;
-    return Container(
-      decoration: BoxDecoration(
-        color: primary.withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
+
+    return SingleChildScrollView(
+      padding: const EdgeInsets.fromLTRB(18, 18, 18, 30),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          IconButton(
-            visualDensity: VisualDensity.compact,
-            onPressed: value > 1 ? () => onChanged(value - 1) : null,
-            icon: Icon(Icons.remove_rounded, color: primary),
+          SectionTitle(
+            title: 'Items',
+            caption:
+                '${cart.itemCount} ${cart.itemCount == 1 ? 'item' : 'items'} in your cart.',
           ),
-          Text('$value', style: const TextStyle(fontWeight: FontWeight.w800)),
-          IconButton(
-            visualDensity: VisualDensity.compact,
-            onPressed: value < 20 ? () => onChanged(value + 1) : null,
-            icon: Icon(Icons.add_rounded, color: primary),
+          SectionCard(
+            child: Column(
+              children: [
+                for (var i = 0; i < cart.items.length; i++) ...[
+                  if (i > 0) const Divider(height: 24),
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.circle,
+                        size: 10,
+                        color: cart.items[i].food.isVeg
+                            ? Colors.green
+                            : Colors.red,
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              cart.items[i].food.name,
+                              style: const TextStyle(
+                                fontSize: 15,
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                            const SizedBox(height: 3),
+                            Text(
+                              Helpers.currency(cart.items[i].total),
+                              style: TextStyle(
+                                color: primary,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      QuantityStepper(
+                        value: cart.items[i].quantity,
+                        onDecrement: () => cubit.remove(cart.items[i].food),
+                        onIncrement:
+                            cart.items[i].quantity < CartCubit.maxQuantity
+                            ? () => cubit.add(cart.items[i].food)
+                            : null,
+                      ),
+                    ],
+                  ),
+                ],
+              ],
+            ),
+          ),
+          const SizedBox(height: 25),
+          const SectionTitle(
+            title: 'Delivery Details',
+            caption: 'Where should we bring your food?',
+          ),
+          SectionCard(
+            child: Column(
+              children: [
+                FormFieldBox(
+                  controller: nameController,
+                  label: 'Name',
+                  icon: Icons.person_outline_rounded,
+                ),
+                FormFieldBox(
+                  controller: phoneController,
+                  label: 'Phone',
+                  icon: Icons.phone_outlined,
+                  keyboardType: TextInputType.phone,
+                ),
+                FormFieldBox(
+                  controller: addressController,
+                  label: 'Delivery address',
+                  icon: Icons.location_on_outlined,
+                  maxLines: 3,
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 25),
+          const SectionTitle(title: 'Bill Summary'),
+          SectionCard(
+            child: Column(
+              children: [
+                _BillRow(
+                  label: 'Item total',
+                  value: Helpers.currency(cart.total),
+                ),
+                const SizedBox(height: 10),
+                const _BillRow(label: 'Delivery fee', value: 'FREE'),
+                const Divider(height: 26),
+                _BillRow(
+                  label: 'To pay',
+                  value: Helpers.currency(cart.total),
+                  bold: true,
+                ),
+              ],
+            ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _PlaceOrderBar extends StatelessWidget {
+  final double total;
+  final bool busy;
+  final VoidCallback onPressed;
+
+  const _PlaceOrderBar({
+    required this.total,
+    required this.busy,
+    required this.onPressed,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return SafeArea(
+      child: Container(
+        padding: const EdgeInsets.fromLTRB(18, 12, 18, 12),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          border: Border(top: BorderSide(color: Colors.grey.shade200)),
+        ),
+        child: Row(
+          children: [
+            Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Total', style: TextStyle(color: Colors.grey.shade600)),
+                Text(
+                  Helpers.currency(total),
+                  style: const TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(width: 18),
+            Expanded(
+              child: FilledButton.icon(
+                onPressed: busy ? null : onPressed,
+                icon: busy
+                    ? const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.shopping_bag_rounded),
+                label: const Text('Place Order'),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../core/widgets/app_widgets.dart';
+import '../../../orders/presentation/bloc/cart_cubit.dart';
+import '../../../orders/presentation/widgets/cart_widgets.dart';
 import '../../domain/entities/food_entity.dart';
 import '../bloc/food_bloc.dart';
 import '../bloc/food_event.dart';
@@ -69,7 +71,15 @@ class _FoodListPageState extends State<FoodListPage> {
           title: 'Available Foods',
           subtitle: 'Pick something delicious',
         ),
+        actions: [
+          if (widget.customerUid != null)
+            CartIconButton(customerId: widget.customerUid!),
+          const SizedBox(width: 8),
+        ],
       ),
+      bottomNavigationBar: widget.customerUid != null
+          ? ViewCartBar(customerId: widget.customerUid!)
+          : null,
       body: BlocBuilder<FoodBloc, FoodState>(
         builder: (context, state) {
           if (state is FoodLoading || state is FoodInitial) {
@@ -178,6 +188,9 @@ class _FoodListPageState extends State<FoodListPage> {
                         return FoodCard(
                           food: food,
                           itemNumber: index + 1,
+                          action: widget.customerUid != null && food.isAvailable
+                              ? _QuickAddButton(food: food)
+                              : null,
                           onTap: () => Navigator.push(
                             context,
                             MaterialPageRoute(
@@ -196,6 +209,41 @@ class _FoodListPageState extends State<FoodListPage> {
           );
         },
       ),
+    );
+  }
+}
+
+/// Compact "Add" button on a food card; shows the cart quantity once added.
+class _QuickAddButton extends StatelessWidget {
+  final FoodEntity food;
+
+  const _QuickAddButton({required this.food});
+
+  @override
+  Widget build(BuildContext context) {
+    final quantity = context.select<CartCubit, int>(
+      (cubit) => cubit.state.quantityOf(food.id),
+    );
+
+    return SizedBox(
+      height: 30,
+      child: quantity == 0
+          ? OutlinedButton(
+              style: OutlinedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(horizontal: 14),
+                visualDensity: VisualDensity.compact,
+              ),
+              onPressed: () => addToCart(context, food),
+              child: const Text('ADD'),
+            )
+          : FilledButton(
+              style: FilledButton.styleFrom(
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                visualDensity: VisualDensity.compact,
+              ),
+              onPressed: () => addToCart(context, food),
+              child: Text('$quantity in cart +'),
+            ),
     );
   }
 }

@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../core/utils/helpers.dart';
 import '../../../../core/widgets/app_widgets.dart';
-import '../../../orders/presentation/pages/checkout_page.dart';
+import '../../../orders/presentation/bloc/cart_cubit.dart';
+import '../../../orders/presentation/widgets/cart_widgets.dart';
 import '../../domain/entities/food_entity.dart';
 import '../widgets/nutrition_info_card.dart';
 
@@ -22,24 +24,16 @@ class FoodDetailsPage extends StatelessWidget {
     final canOrder = customerUid != null && food.isAvailable;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Food Details'), centerTitle: true),
+      appBar: AppBar(
+        title: const Text('Food Details'),
+        centerTitle: true,
+        actions: [
+          if (customerUid != null) CartIconButton(customerId: customerUid!),
+          const SizedBox(width: 8),
+        ],
+      ),
       bottomNavigationBar: canOrder
-          ? SafeArea(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(18, 8, 18, 12),
-                child: FilledButton.icon(
-                  onPressed: () => Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) =>
-                          CheckoutPage(customerId: customerUid!, food: food),
-                    ),
-                  ),
-                  icon: const Icon(Icons.shopping_bag_rounded),
-                  label: Text('Order Now · ${Helpers.currency(food.price)}'),
-                ),
-              ),
-            )
+          ? _AddToCartBar(food: food, customerId: customerUid!)
           : null,
       body: SingleChildScrollView(
         padding: const EdgeInsets.fromLTRB(18, 18, 18, 30),
@@ -135,6 +129,53 @@ class FoodDetailsPage extends StatelessWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+/// "Add to cart" button, or a quantity stepper + "View cart" once added.
+class _AddToCartBar extends StatelessWidget {
+  final FoodEntity food;
+  final String customerId;
+
+  const _AddToCartBar({required this.food, required this.customerId});
+
+  @override
+  Widget build(BuildContext context) {
+    final quantity = context.select<CartCubit, int>(
+      (cubit) => cubit.state.quantityOf(food.id),
+    );
+    final cart = context.read<CartCubit>();
+
+    return SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(18, 8, 18, 12),
+        child: quantity == 0
+            ? FilledButton.icon(
+                onPressed: () => addToCart(context, food),
+                icon: const Icon(Icons.add_shopping_cart_rounded),
+                label: Text('Add to cart · ${Helpers.currency(food.price)}'),
+              )
+            : Row(
+                children: [
+                  QuantityStepper(
+                    value: quantity,
+                    onDecrement: () => cart.remove(food),
+                    onIncrement: quantity < CartCubit.maxQuantity
+                        ? () => cart.add(food)
+                        : null,
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: FilledButton.icon(
+                      onPressed: () => openCart(context, customerId),
+                      icon: const Icon(Icons.shopping_bag_rounded),
+                      label: const Text('View cart'),
+                    ),
+                  ),
+                ],
+              ),
       ),
     );
   }

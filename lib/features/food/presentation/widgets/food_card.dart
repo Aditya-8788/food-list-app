@@ -8,11 +8,15 @@ class FoodCard extends StatelessWidget {
   final VoidCallback onTap;
   final int itemNumber;
 
+  /// Optional control (e.g. an add-to-cart button) shown under the price.
+  final Widget? action;
+
   const FoodCard({
     super.key,
     required this.food,
     required this.onTap,
     this.itemNumber = 1,
+    this.action,
   });
 
   @override
@@ -94,14 +98,15 @@ class FoodCard extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 4),
-                  Text(
-                    food.isAvailable ? 'Available' : 'Unavailable',
-                    style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w600,
-                      color: food.isAvailable ? Colors.green : Colors.grey,
-                    ),
-                  ),
+                  action ??
+                      Text(
+                        food.isAvailable ? 'Available' : 'Unavailable',
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                          color: food.isAvailable ? Colors.green : Colors.grey,
+                        ),
+                      ),
                 ],
               ),
             ],

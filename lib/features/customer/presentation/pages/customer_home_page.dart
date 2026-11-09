@@ -8,11 +8,13 @@ import '../../../auth/presentation/bloc/auth_event.dart';
 import '../../../auth/presentation/pages/login_page.dart';
 import '../../../food/presentation/pages/food_list_page.dart';
 import '../../../orders/domain/entities/order_entity.dart';
+import '../../../orders/presentation/bloc/cart_cubit.dart';
 import '../../../orders/presentation/bloc/order_bloc.dart';
 import '../../../orders/presentation/bloc/order_event.dart';
 import '../../../orders/presentation/bloc/order_state.dart';
 import '../../../orders/presentation/pages/order_tracking_page.dart';
 import '../../../orders/presentation/pages/orders_page.dart';
+import '../../../orders/presentation/widgets/cart_widgets.dart';
 import '../../../orders/presentation/widgets/order_card.dart';
 import 'customer_profile_page.dart';
 
@@ -22,6 +24,7 @@ class CustomerHomePage extends StatelessWidget {
   const CustomerHomePage({super.key, required this.uid});
 
   void _logout(BuildContext context) {
+    context.read<CartCubit>().clear();
     context.read<AuthBloc>().add(AuthLogoutRequested());
     Navigator.of(context).pushAndRemoveUntil(
       MaterialPageRoute(builder: (_) => const LoginPage()),
@@ -41,6 +44,7 @@ class CustomerHomePage extends StatelessWidget {
             subtitle: 'Healthy food with nutrition info',
           ),
           actions: [
+            CartIconButton(customerId: uid),
             IconButton(
               tooltip: 'Profile',
               icon: const Icon(Icons.person_outline_rounded),
@@ -59,6 +63,7 @@ class CustomerHomePage extends StatelessWidget {
             const SizedBox(width: 8),
           ],
         ),
+        bottomNavigationBar: ViewCartBar(customerId: uid),
         body: ListView(
           padding: const EdgeInsets.fromLTRB(18, 18, 18, 30),
           children: [

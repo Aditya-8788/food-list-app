@@ -1,0 +1,71 @@
+rules_version = '2';
+
+// Security rules for the Food Delivery app.
+// Deploy with: firebase deploy --only firestore:rules
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function isUser(uid) {
+      return signedIn() && request.auth.uid == uid;
+    }
+
+    // User profiles (customers and hotel owners). Each user manages their own.
+    match /users/{uid} {
+      allow read, write: if isUser(uid);
+    }
+
+    // Restaurants: anyone signed in can view; only the owner can change.
+    match /hotels/{hotelId} {
+      allow read: if signedIn();
+      allow create: if isUser(request.resource.data.ownerId);
+      allow update, delete: if isUser(resource.data.ownerId)
+        && request.resource.data.ownerId == resource.data.ownerId;
+    }
+
+    // Menu items: anyone signed in can view; only the owning hotel can change.
+    match /foods/{foodId} {
+      allow read: if signedIn();
+      allow create: if isUser(request.resource.data.ownerId);
+      allow update: if isUser(resource.data.ownerId)
+        && request.resource.data.ownerId == resource.data.ownerId;
+      allow delete: if isUser(resource.data.ownerId);
+    }
+
+    // Orders: visible to the customer who placed them and the hotel receiving them.
+    match /orders/{orderId} {
+      function isCustomer() {
+        return isUser(resource.data.customerId);
+      }
+
+      function isHotelOwner() {
+        return isUser(resource.data.hotelOwnerId);
+      }
+
+      // Only status, timeline and updatedAt may change after placing.
+      function onlyStatusChanged() {
+        return request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['status', 'timeline', 'updatedAt']);
+      }
+
+      allow read: if isCustomer() || isHotelOwner();
+
+      // Customers place their own orders, always starting at "Placed".
+      allow create: if isUser(request.resource.data.customerId)
+        && request.resource.data.status == 'Placed';
+
+      // Hotel owners move the order along (or reject it).
+      allow update: if isHotelOwner() && onlyStatusChanged();
+
+      // Customers may only cancel while the order is still "Placed".
+      allow update: if isCustomer() && onlyStatusChanged()
+        && resource.data.status == 'Placed'
+        && request.resource.data.status == 'Cancelled';
+
+      allow delete: if false;
+    }
+  }
+}

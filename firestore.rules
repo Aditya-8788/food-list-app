@@ -13,9 +13,11 @@ service cloud.firestore {
       return signedIn() && request.auth.uid == uid;
     }
 
-    // User profiles (customers and hotel owners). Each user manages their own.
+    // User profiles (customers and hotel owners). Each user manages their own;
+    // profiles are never deleted from the app.
     match /users/{uid} {
-      allow read, write: if isUser(uid);
+      allow create, read, update: if isUser(uid);
+      allow delete: if false;
     }
 
     // Restaurants: anyone signed in can view; only the owner can change.

@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 import '../../../../core/constants/firestore_collections.dart';
+import '../../../../core/error/exceptions.dart';
 import '../../domain/entities/order_entity.dart';
 import '../models/order_model.dart';
 
@@ -28,18 +29,27 @@ class OrderRemoteDataSourceImpl implements OrderRemoteDataSource {
   @override
   Future<String> placeOrder(OrderModel order) async {
     var hotelName = order.hotelName;
+    Map<String, dynamic>? hotel;
 
-    // Resolve the restaurant name so both sides see it on the order.
+    // Resolve the restaurant so both sides see its name on the order.
     if (order.hotelId.isNotEmpty) {
       try {
         final hotelDoc = await firestore
             .collection(FirestoreCollections.hotels)
             .doc(order.hotelId)
             .get();
-        hotelName = hotelDoc.data()?['hotelName']?.toString() ?? hotelName;
+        hotel = hotelDoc.data();
+        hotelName = hotel?['hotelName']?.toString() ?? hotelName;
       } catch (_) {
         // Keep the fallback name if the hotel lookup fails.
       }
+    }
+
+    // Respect the owner's "Hotel Open" switch.
+    if (hotel?['isOpen'] == false) {
+      throw ServerException(
+        '$hotelName is closed right now. Please try again later.',
+      );
     }
 
     final docRef = _orders.doc();
